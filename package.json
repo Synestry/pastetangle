@@ -1,0 +1,25 @@
+{
+    "name": "pastetangle",
+    "version": "0.1.0",
+    "private": true,
+    "dependencies": {
+        "brace": "^0.10.0",
+        "preact": "^8.2.6",
+        "preact-compat": "^3.17.0",
+        "react-ace": "^5.4.0"
+    },
+    "devDependencies": {
+        "@types/node": "^8.0.47",
+        "@types/react": "^16.0.18",
+        "@types/react-dom": "^16.0.2",
+        "preact-compat-scripts-ts": "0.9.24",
+        "react": "^16.0.0",
+        "react-dom": "^16.0.0"
+    },
+    "scripts": {
+        "start": "preact-compat-scripts-ts start",
+        "build": "preact-compat-scripts-ts build",
+        "test": "preact-compat-scripts-ts test --env=jsdom",
+        "eject": "preact-compat-scripts-ts eject"
+    }
+}
