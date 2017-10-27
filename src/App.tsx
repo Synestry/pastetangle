@@ -22,13 +22,6 @@ class App extends React.Component<{}, {}> {
                         </div>
                     </div>
                 </section>
-
-
-                {/* <div className="App-header">
-                    <img src={logo} className="App-logo" alt="logo" />
-                    <h2 className="title">Paste Tangle</h2>
-                </div>
-                <br /> */}
                 <section className="section">
                     <Editor />
                 </section>

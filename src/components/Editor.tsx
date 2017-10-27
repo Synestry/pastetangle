@@ -3,6 +3,7 @@ import './Editor.css';
 import AceEditor from 'react-ace';
 import { RingLoader } from 'halogen';
 import 'brace/mode/jsx';
+import Clipboard = require('clipboard');
 
 const queryState = require('querystate')();
 
@@ -167,6 +168,13 @@ export default class Editor extends React.Component<Props, State> {
         });
     }
 
+    onCopy() {
+        let a = new Clipboard('.copy-url', {
+            text: () => window.location.href
+        });
+        return a;
+    }
+
     onChange(newValue: string) {
         this.setState({
             value: newValue
@@ -259,13 +267,25 @@ export default class Editor extends React.Component<Props, State> {
                                 </p>
                             </div>
 
-                            <div className="field">
-                                <button
-                                    className={`button is-primary${this.state.loading ? ' is-loading' : ''}`}
-                                    disabled={this.state.loading}
-                                    onClick={(e) => this.onSave()}>Save To Tangle
-                                </button>
+                            <div className="field is-grouped">
+                                <p className="control">
+                                    <button
+                                        className={`button is-primary${this.state.loading ? ' is-loading' : ''}`}
+                                        disabled={this.state.loading}
+                                        onClick={(e) => this.onSave()}>Save To Tangle
+                                    </button>
+                                </p>
+                                <p className="control">
+                                    <button
+                                        className="button is-primary copy-url"
+                                        onClick={(e) => this.onCopy()}>Copy URL
+                                    </button>
+                                </p>
                             </div>
+{/*
+                            <div className="field">
+
+                            </div> */}
 
                             <p className="field">
                                 <a className="button"
