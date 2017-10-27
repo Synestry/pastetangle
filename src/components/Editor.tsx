@@ -1,5 +1,7 @@
 import * as React from 'react';
+import './Editor.css';
 import AceEditor from 'react-ace';
+import { RingLoader } from 'halogen';
 import 'brace/mode/jsx';
 
 const queryState = require('querystate')();
@@ -55,6 +57,8 @@ import iotaHelper from '../helpers/IotaHelper';
 interface Props {
 }
 interface State {
+    loading: boolean;
+    status: string;
     value: string;
     theme: string;
     mode: string;
@@ -66,7 +70,11 @@ export default class Editor extends React.Component<Props, State> {
     constructor(props: Props) {
         super(props);
 
+        let bundle = queryState.get('bundle');
+
         this.state = {
+            loading: Boolean(bundle),
+            status: 'Fetching code...',
             value: defaultCode,
             theme: 'tomorrow',
             mode: 'javascript',
@@ -74,17 +82,13 @@ export default class Editor extends React.Component<Props, State> {
             tabSize: 4,
         };
 
-        this.getCode(queryState.get('bundle'));
+        this.getCode(bundle);
     }
 
     async getCode(bundle?: string) {
         if (!bundle) {
             return;
         }
-
-        this.setState({
-            value: 'Fetching code...',
-        });
 
         console.log('Fetching code...');
 
@@ -95,11 +99,58 @@ export default class Editor extends React.Component<Props, State> {
             theme: metaData.theme,
             mode: metaData.mode,
             fontSize: metaData.fontSize,
-            tabSize: metaData.tabSize
+            tabSize: metaData.tabSize,
+            loading: false
         });
     }
 
+    getEditor() {
+        if (this.state.loading) {
+            return (
+                <div className="loading-container">
+                    <div className="loading-aligner">
+                        <ul>
+                            <li>
+                                <h3 className="status-text">{this.state.status}</h3>
+                            </li>
+                            <li>
+                                <RingLoader size="100px" color="#00d1b2" />
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            );
+        }
+
+        return (
+            <AceEditor
+                mode={this.state.mode}
+                theme={this.state.theme}
+                name="paste"
+                onChange={e => this.onChange(e)}
+                value={this.state.value}
+                fontSize={this.state.fontSize}
+                showPrintMargin={true}
+                showGutter={true}
+                highlightActiveLine={true}
+                width="1000px"
+                setOptions={{
+                    enableBasicAutocompletion: true,
+                    enableLiveAutocompletion: true,
+                    enableSnippets: true,
+                    showLineNumbers: true,
+                    tabSize: this.state.tabSize,
+                    useSoftTabs: true,
+                }} />
+        );
+    }
+
     async onSave() {
+        this.setState({
+            loading: true,
+            status: 'Saving...'
+        });
+
         console.log('saving...');
         let transaction = await iotaHelper.uploadToTangle(this.state.value, {
             theme: this.state.theme,
@@ -111,6 +162,9 @@ export default class Editor extends React.Component<Props, State> {
         console.log(transaction);
         queryState.set('bundle', transaction.bundle);
         queryState.set('seed', transaction.seed);
+        this.setState({
+            loading: false
+        });
     }
 
     onChange(newValue: string) {
@@ -152,7 +206,7 @@ export default class Editor extends React.Component<Props, State> {
                         <div className="column">
                             <h2>Options</h2>
                             <div className="field">
-                                <label>Mode:</label>
+                                <label>Language:</label>
                                 <p className="control">
                                     <span className="select">
                                         <select name="mode" onChange={(e) => this.setMode(e)} value={this.state.mode}>
@@ -204,35 +258,36 @@ export default class Editor extends React.Component<Props, State> {
                                     </span>
                                 </p>
                             </div>
+
+                            <div className="field">
+                                <button
+                                    className={`button is-primary${this.state.loading ? ' is-loading' : ''}`}
+                                    disabled={this.state.loading}
+                                    onClick={(e) => this.onSave()}>Save To Tangle
+                                </button>
+                            </div>
+
+                            <p className="field">
+                                <a className="button"
+                                    target="_blank"
+                                    href="https://github.com/andrewmunro/pastetangle">
+                                    <span className="icon">
+                                        <i className="fa fa-github" />
+                                    </span>
+                                    <span>GitHub</span>
+                                </a>
+                            </p>
                         </div>
 
                         <div className="column">
                             <h2>Editor</h2>
-                            <AceEditor
-                                mode={this.state.mode}
-                                theme={this.state.theme}
-                                name="paste"
-                                onChange={e => this.onChange(e)}
-                                value={this.state.value}
-                                fontSize={this.state.fontSize}
-                                showPrintMargin={true}
-                                showGutter={true}
-                                highlightActiveLine={true}
-                                width="1000px"
-                                setOptions={{
-                                    enableBasicAutocompletion: true,
-                                    enableLiveAutocompletion: true,
-                                    enableSnippets: true,
-                                    showLineNumbers: true,
-                                    tabSize: this.state.tabSize,
-                                    useSoftTabs: true,
-                                }} />
+                            {this.getEditor()}
                         </div>
 
-                        <div className="column">
+                        {/* <div className="column">
                             <h2>Save</h2>
-                            <button onClick={(e) => this.onSave()}>Save To Tangle</button>
-                        </div>
+
+                        </div> */}
                     </div>
                 </div>
             </div>

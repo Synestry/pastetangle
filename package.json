@@ -6,6 +6,7 @@
     "brace": "^0.10.0",
     "crypto": "^1.0.1",
     "curl.lib.js": "^1.0.22",
+    "halogen": "^0.2.0",
     "iota.lib.js": "^0.4.2",
     "preact": "^8.2.6",
     "preact-compat": "^3.17.0",

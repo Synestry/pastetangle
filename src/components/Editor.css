@@ -1,0 +1,22 @@
+.loading-container {
+    width: 1000px;
+    height: 500px;
+}
+
+.loading-aligner {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    justify-content: center;
+    width: 60%;
+    height: 60%;
+}
+
+.loading-container li {
+    display: flex;
+    justify-content: center
+}
+
+.status-text {
+    color: #00d1b2 !important;
+}

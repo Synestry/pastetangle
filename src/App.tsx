@@ -8,12 +8,30 @@ class App extends React.Component<{}, {}> {
     render() {
         return (
             <div className="App">
-                <div className="App-header">
+                <section className="hero is-primary">
+                    <div className="hero-body">
+                        <div className="container has-text-centered">
+                            <img src={logo} className="App-logo" alt="logo" />
+
+                            <h1 className="title">
+                                PasteTangle
+                            </h1>
+                            <h2 className="subtitle">
+                                An encrypted anonymous pastebin
+                            </h2>
+                        </div>
+                    </div>
+                </section>
+
+
+                {/* <div className="App-header">
                     <img src={logo} className="App-logo" alt="logo" />
-                    <h2>Paste Tangle</h2>
+                    <h2 className="title">Paste Tangle</h2>
                 </div>
-                <br />
-                <Editor />
+                <br /> */}
+                <section className="section">
+                    <Editor />
+                </section>
             </div>
         );
     }
