@@ -2,6 +2,8 @@ import * as React from 'react';
 import AceEditor from 'react-ace';
 import 'brace/mode/jsx';
 
+const queryState = require('querystate')();
+
 const languages = [
     'javascript',
     'java',
@@ -22,9 +24,9 @@ const languages = [
 ];
 
 const themes = [
+    'tomorrow',
     'monokai',
     'github',
-    'tomorrow',
     'kuroir',
     'twilight',
     'xcode',
@@ -51,7 +53,6 @@ import 'brace/ext/searchbox';
 import iotaHelper from '../helpers/IotaHelper';
 
 interface Props {
-    code?: string;
 }
 interface State {
     value: string;
@@ -62,16 +63,54 @@ interface State {
 }
 
 export default class Editor extends React.Component<Props, State> {
+    constructor(props: Props) {
+        super(props);
+
+        this.state = {
+            value: defaultCode,
+            theme: 'tomorrow',
+            mode: 'javascript',
+            fontSize: 14,
+            tabSize: 4,
+        };
+
+        this.getCode(queryState.get('bundle'));
+    }
+
+    async getCode(bundle?: string) {
+        if (!bundle) {
+            return;
+        }
+
+        this.setState({
+            value: 'Fetching code...',
+        });
+
+        console.log('Fetching code...');
+
+        let { data, metaData } = await iotaHelper.fetchFromTangle<string, State>(bundle, queryState.get('seed'));
+
+        this.setState({
+            value: data as string,
+            theme: metaData.theme,
+            mode: metaData.mode,
+            fontSize: metaData.fontSize,
+            tabSize: metaData.tabSize
+        });
+    }
+
     async onSave() {
         console.log('saving...');
-        let txs = await iotaHelper.uploadToTangle(this.state.value, {
+        let transaction = await iotaHelper.uploadToTangle(this.state.value, {
             theme: this.state.theme,
             mode: this.state.mode,
             fontSize: this.state.fontSize,
             tabSize: this.state.tabSize
         });
 
-        console.log(txs);
+        console.log(transaction);
+        queryState.set('bundle', transaction.bundle);
+        queryState.set('seed', transaction.seed);
     }
 
     onChange(newValue: string) {
@@ -104,22 +143,6 @@ export default class Editor extends React.Component<Props, State> {
         });
     }
 
-    constructor(props: Props) {
-        super(props);
-        this.state = {
-            value: props.code || defaultCode,
-            theme: 'monokai',
-            mode: 'javascript',
-            fontSize: 14,
-            tabSize: 4,
-        };
-        this.setTheme = this.setTheme.bind(this);
-        this.setMode = this.setMode.bind(this);
-        this.onChange = this.onChange.bind(this);
-        this.setFontSize = this.setFontSize.bind(this);
-        this.setTabSize = this.setTabSize.bind(this);
-    }
-
     render(): JSX.Element {
         return (
             <div className="container">
@@ -132,7 +155,7 @@ export default class Editor extends React.Component<Props, State> {
                                 <label>Mode:</label>
                                 <p className="control">
                                     <span className="select">
-                                        <select name="mode" onChange={this.setMode} value={this.state.mode}>
+                                        <select name="mode" onChange={(e) => this.setMode(e)} value={this.state.mode}>
                                             {languages.map((lang) => <option key={lang} value={lang}>{lang}</option>)}
                                         </select>
                                     </span>
@@ -142,7 +165,10 @@ export default class Editor extends React.Component<Props, State> {
                                 <label>Theme:</label>
                                 <p className="control">
                                     <span className="select">
-                                        <select name="Theme" onChange={this.setTheme} value={this.state.theme}>
+                                        <select
+                                            name="Theme"
+                                            onChange={(e) => this.setTheme(e)}
+                                            value={this.state.theme}>
                                             {themes.map((lang) => <option key={lang} value={lang}>{lang}</option>)}
                                         </select>
                                     </span>
@@ -154,7 +180,7 @@ export default class Editor extends React.Component<Props, State> {
                                     <span className="select">
                                         <select
                                             name="Font Size"
-                                            onChange={this.setFontSize}
+                                            onChange={e => this.setFontSize(e)}
                                             value={this.state.fontSize}>
                                             {[14, 16, 18, 20, 24, 28, 32, 40].map((lang) =>
                                                 <option key={lang} value={lang}>{lang}</option>)
@@ -169,7 +195,7 @@ export default class Editor extends React.Component<Props, State> {
                                     <span className="select">
                                         <select
                                             name="Tab Size"
-                                            onChange={this.setTabSize}
+                                            onChange={e => this.setTabSize(e)}
                                             value={this.state.tabSize}>
                                             {[1, 2, 3, 4].map((lang) =>
                                                 <option key={lang} value={lang}>{lang}</option>)
@@ -186,12 +212,13 @@ export default class Editor extends React.Component<Props, State> {
                                 mode={this.state.mode}
                                 theme={this.state.theme}
                                 name="paste"
-                                onChange={this.onChange}
+                                onChange={e => this.onChange(e)}
                                 value={this.state.value}
                                 fontSize={this.state.fontSize}
                                 showPrintMargin={true}
                                 showGutter={true}
                                 highlightActiveLine={true}
+                                width="1000px"
                                 setOptions={{
                                     enableBasicAutocompletion: true,
                                     enableLiveAutocompletion: true,

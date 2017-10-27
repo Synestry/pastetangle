@@ -1,6 +1,7 @@
-const IOTA = require('iota.lib.js');
-const curl = require('curl.lib.js');
-const localAttachToTangle = require('./localAttatchToTangle');
+import IOTA = require('iota.lib.js');
+import curl = require('curl.lib.js');
+import localAttachToTangle = require('./localAttatchToTangle');
+import { encrypt, decrypt } from './crypt';
 
 const MAX_TRYTES = 2187;
 
@@ -10,10 +11,10 @@ export class IotaHelper {
 
     constructor() {
         this.iota = new IOTA({
-            provider: process.env.IOTA_NODE
+            provider: process.env.IOTA_NODE || 'https://node.tangle.works:443'
         });
 
-        this.iota.api.attachToTangle = localAttachToTangle;
+        this.iota.api.attachToTangle = localAttachToTangle.default(this.iota, curl);
 
         this.seed = this.createSeed();
 
@@ -30,25 +31,24 @@ export class IotaHelper {
         return text;
     }
 
-    public async uploadToTangle(data: {} | string, metaData: {} | string): Promise<TransactionObject[]> {
+    public async uploadToTangle(data: {} | string, metaData: {} | string): Promise<{ bundle: number, seed: string }> {
         let address = await this.generateAddress();
-        let tx = this.createTransactions(JSON.stringify(data.toString()), JSON.stringify(metaData.toString()), address);
-        return await this.sendTransactions(tx);
+        let tx = this.createTransactions(data, metaData, address);
+        let to = await this.sendTransactions(tx);
+
+        return {
+            bundle: to.bundle,
+            seed: this.seed,
+        };
     }
 
-    public async fetchFromTangle(bundle: string): Promise<{ data: {}, metaData: {} }> {
+    public async fetchFromTangle<D, M>(bundle: string, seed: string): Promise<{ data: D, metaData: M }> {
         let transactions = await this.getTransactions(bundle);
         transactions = transactions.sort((a, b) => a.currentIndex - b.currentIndex);
         let trytes = transactions.map(tx => tx.signatureMessageFragment);
 
-        let chunks = this.trytesToBase64(trytes).split(',');
-        let metaData = JSON.parse(chunks.shift() as string);
-        let data = JSON.parse(chunks.join());
-
-        return {
-            data,
-            metaData
-        };
+        let data = this.trytesToBase64(trytes);
+        return decrypt(data, seed) as { data: D, metaData: M };
     }
 
     private generateAddress(): Promise<string> {
@@ -63,15 +63,14 @@ export class IotaHelper {
         });
     }
 
-    private sendTransactions(txs: TransferObject[]): Promise<TransactionObject[]> {
+    private sendTransactions(txs: TransferObject[]): Promise<TransactionObject> {
         return new Promise((resolve, reject) => {
             this.iota.api.sendTransfer(
-                this.seed, 4, 14, txs, undefined, (error: Error, response: { inputs: TransactionObject[] }
-                ) => {
+                this.seed, 4, 14, txs, {}, (error: Error, transactions: TransactionObject[]) => {
                     if (error) {
                         reject(error);
                     } else {
-                        resolve(response.inputs);
+                        resolve(transactions[0]);
                     }
                 });
         });
@@ -91,8 +90,10 @@ export class IotaHelper {
         return trytes.match(new RegExp(`.{1,${MAX_TRYTES}}`, 'g'));
     }
 
-    private createTransactions(data: string, metaData: string, address: string): TransferObject[] {
-        let trytes = this.toTrytes(`${metaData},'${data}`);
+    private createTransactions(data: {} | string, metaData: {} | string, address: string): TransferObject[] {
+        let encrypedData = encrypt({ data, metaData }, this.seed);
+
+        let trytes = this.toTrytes(encrypedData);
         if (!trytes) {
             throw new Error('Could not make trytes :S');
         }

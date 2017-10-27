@@ -1,7 +1,8 @@
-export default (iotaObj, curl) => {
+const MAX_TIMESTAMP_VALUE = (Math.pow(3, 27) - 1) / 2;
+
+export default (iota, curl) => {
     return function (trunkTransaction, branchTransaction, minWeightMagnitude, trytes, callback) {
         const ccurlHashing = function (trunkTransaction, branchTransaction, minWeightMagnitude, trytes, callback) {
-            $('.progress-bar').text('Starting proof of work');
             const iotaObj = iota;
             // inputValidator: Check if correct hash
             if (!iotaObj.valid.isHash(trunkTransaction)) {

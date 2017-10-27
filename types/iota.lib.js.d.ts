@@ -256,13 +256,11 @@ interface IotaApi extends IriApi {
         depth: number,
         minWeightMagnitude: number,
         transfers: TransferObject[],
-        options?: {
-            inputs: string[],
-            address: string
+        options: {
+            inputs?: string[],
+            address?: string
         },
-        callback?: (error: Error, response: {
-            inputs: TransactionObject[]
-        }) => void
+        callback?: (error: Error, transactions: TransactionObject[]) => void
     )
 
     replayBundle(
