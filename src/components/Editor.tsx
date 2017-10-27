@@ -48,6 +48,8 @@ themes.forEach((theme) => {
 import 'brace/ext/language_tools';
 import 'brace/ext/searchbox';
 
+import iotaHelper from '../helpers/IotaHelper';
+
 interface Props {
     code?: string;
 }
@@ -60,8 +62,16 @@ interface State {
 }
 
 export default class Editor extends React.Component<Props, State> {
-    publish() {
-        // console.log('publish');
+    async onSave() {
+        console.log('saving...');
+        let txs = await iotaHelper.uploadToTangle(this.state.value, {
+            theme: this.state.theme,
+            mode: this.state.mode,
+            fontSize: this.state.fontSize,
+            tabSize: this.state.tabSize
+        });
+
+        console.log(txs);
     }
 
     onChange(newValue: string) {
@@ -194,6 +204,7 @@ export default class Editor extends React.Component<Props, State> {
 
                         <div className="column">
                             <h2>Save</h2>
+                            <button onClick={(e) => this.onSave()}>Save To Tangle</button>
                         </div>
                     </div>
                 </div>
