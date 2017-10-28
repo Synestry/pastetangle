@@ -2,7 +2,7 @@
     "name": "pastetangle",
     "version": "0.1.0",
     "private": true,
-    "homepage": "https://andrewmunro.github.io/pastetangle",
+    "homepage": "https://synestry.github.io/pastetangle",
     "dependencies": {
         "brace": "^0.10.0",
         "clipboard": "^1.7.1",

@@ -59,6 +59,8 @@ interface Props {
 }
 interface State {
     loading: boolean;
+    bundle: string;
+    seed: string;
     status: string;
     value: string;
     theme: string;
@@ -71,10 +73,10 @@ export default class Editor extends React.Component<Props, State> {
     constructor(props: Props) {
         super(props);
 
-        let bundle = queryState.get('bundle');
-
         this.state = {
-            loading: Boolean(bundle),
+            loading: Boolean(queryState.get('bundle')),
+            bundle: queryState.get('bundle'),
+            seed: queryState.get('seed'),
             status: 'Fetching code...',
             value: defaultCode,
             theme: 'tomorrow',
@@ -83,17 +85,17 @@ export default class Editor extends React.Component<Props, State> {
             tabSize: 4,
         };
 
-        this.getCode(bundle);
+        this.getCode();
     }
 
-    async getCode(bundle?: string) {
-        if (!bundle) {
+    async getCode() {
+        if (!this.state.bundle || !this.state.seed) {
             return;
         }
 
         console.log('Fetching code...');
 
-        let { data, metaData } = await iotaHelper.fetchFromTangle<string, State>(bundle, queryState.get('seed'));
+        let { data, metaData } = await iotaHelper.fetchFromTangle<string, State>(this.state.bundle, this.state.seed);
 
         this.setState({
             value: data as string,
@@ -164,6 +166,8 @@ export default class Editor extends React.Component<Props, State> {
         queryState.set('bundle', transaction.bundle);
         queryState.set('seed', transaction.seed);
         this.setState({
+            bundle: transaction.bundle.toString(),
+            seed: transaction.seed,
             loading: false
         });
     }
@@ -269,33 +273,43 @@ export default class Editor extends React.Component<Props, State> {
 
                             <div className="field is-grouped">
                                 <p className="control">
-                                    <button
-                                        className={`button is-primary${this.state.loading ? ' is-loading' : ''}`}
+                                    <button className={`button is-primary${this.state.loading ? ' is-loading' : ''}`}
                                         disabled={this.state.loading}
                                         onClick={(e) => this.onSave()}>Save To Tangle
                                     </button>
                                 </p>
                                 <p className="control">
-                                    <button
-                                        className="button is-primary copy-url"
-                                        onClick={(e) => this.onCopy()}>Copy URL
+                                    <button className="button is-primary copy-url"
+                                        onClick={(e) => this.onCopy()}>
+                                        <span className="icon">
+                                            <i className="fa fa-clipboard copy-icon"/>
+                                        </span>
+                                        <span>Copy URL</span>
                                     </button>
                                 </p>
                             </div>
-{/*
-                            <div className="field">
 
-                            </div> */}
+                            <p className="field is-grouped">
+                                <p className="control">
+                                    <a className="button"
+                                        target="_blank"
+                                        href="https://github.com/Synestry/pastetangle">
+                                        <span className="icon">
+                                            <i className="fa fa-github" />
+                                        </span>
+                                        <span>GitHub</span>
+                                    </a>
+                                </p>
+                                {this.state.bundle ? (
+                                <p className="control">
+                                    <a className="button"
+                                        target="_blank"
+                                        href={`https://thetangle.org/bundle/${this.state.bundle}`}>
+                                        <span>See Transaction</span>
+                                    </a>
+                                </p>
+                                ) : null}
 
-                            <p className="field">
-                                <a className="button"
-                                    target="_blank"
-                                    href="https://github.com/andrewmunro/pastetangle">
-                                    <span className="icon">
-                                        <i className="fa fa-github" />
-                                    </span>
-                                    <span>GitHub</span>
-                                </a>
                             </p>
                         </div>
 
@@ -303,11 +317,6 @@ export default class Editor extends React.Component<Props, State> {
                             <h2>Editor</h2>
                             {this.getEditor()}
                         </div>
-
-                        {/* <div className="column">
-                            <h2>Save</h2>
-
-                        </div> */}
                     </div>
                 </div>
             </div>
