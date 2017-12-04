@@ -95,6 +95,8 @@ export default class Editor extends React.Component<Props, State> {
 
         console.log('Fetching code...');
 
+        await iotaHelper.init();
+
         let { data, metaData } = await iotaHelper.fetchFromTangle<string, State>(this.state.bundle, this.state.seed);
 
         this.setState({
@@ -282,7 +284,7 @@ export default class Editor extends React.Component<Props, State> {
                                     <button className="button is-primary copy-url"
                                         onClick={(e) => this.onCopy()}>
                                         <span className="icon">
-                                            <i className="fa fa-clipboard copy-icon"/>
+                                            <i className="fa fa-clipboard copy-icon" />
                                         </span>
                                         <span>Copy URL</span>
                                     </button>
@@ -301,13 +303,13 @@ export default class Editor extends React.Component<Props, State> {
                                     </a>
                                 </p>
                                 {this.state.bundle ? (
-                                <p className="control">
-                                    <a className="button"
-                                        target="_blank"
-                                        href={`https://thetangle.org/bundle/${this.state.bundle}`}>
-                                        <span>See Transaction</span>
-                                    </a>
-                                </p>
+                                    <p className="control">
+                                        <a className="button"
+                                            target="_blank"
+                                            href={`https://thetangle.org/bundle/${this.state.bundle}`}>
+                                            <span>See Transaction</span>
+                                        </a>
+                                    </p>
                                 ) : null}
 
                             </p>

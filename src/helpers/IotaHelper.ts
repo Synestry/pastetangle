@@ -9,9 +9,11 @@ export class IotaHelper {
     private iota: IotaClass;
     private seed: string;
 
-    constructor() {
+    public async init(): Promise<void> {
+        let nodes = await this.getNodes();
+
         this.iota = new IOTA({
-            provider: process.env.IOTA_NODE || 'https://node.tangle.works:443'
+            provider: nodes[0]
         });
 
         this.iota.api.attachToTangle = localAttachToTangle.default(this.iota, curl);
@@ -49,6 +51,20 @@ export class IotaHelper {
 
         let data = this.trytesToBase64(trytes);
         return decrypt(data, seed) as { data: D, metaData: M };
+    }
+
+    private async getNodes(): Promise<string[]> {
+        try {
+            let res = await window.fetch('http://cors-anywhere.herokuapp.com/http://iota.dance/data/node-stats');
+            let data = await res.json();
+
+            // Sort by ping
+            let results = data[data.length - 1].sort((a, b) => a.d - b.d);
+            return results.map(r => `http://${r.id}:${r.p}`);
+        } catch (ex) {
+            console.log(ex);
+            return [];
+        }
     }
 
     private generateAddress(): Promise<string> {
