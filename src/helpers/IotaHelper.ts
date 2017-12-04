@@ -68,7 +68,10 @@ export class IotaHelper {
 
             // Sort by ping
             let results = data[data.length - 1].sort((a, b) => a.d - b.d);
-            return results.map(r => `http://${r.id}:${r.p}`);
+            return results.map(r => {
+                let protocol = r.p === '443' ? 'https' : 'https://cors-anywhere.herokuapp.com/http';
+                return `${protocol}://${r.id}:${r.p}`;
+            });
         } catch (ex) {
             console.log(ex);
             return [];
