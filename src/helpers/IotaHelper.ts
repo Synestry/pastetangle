@@ -63,7 +63,7 @@ export class IotaHelper {
 
     private async getNodes(): Promise<string[]> {
         try {
-            let res = await window.fetch('http://cors-anywhere.herokuapp.com/http://iota.dance/data/node-stats');
+            let res = await window.fetch('https://cors-anywhere.herokuapp.com/http://iota.dance/data/node-stats');
             let data = await res.json();
 
             // Sort by ping
