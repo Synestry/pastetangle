@@ -9,20 +9,6 @@ export class IotaHelper {
     private iota: IotaClass;
     private seed: string;
 
-    public async init(): Promise<void> {
-        let nodes = await this.getNodes();
-
-        this.iota = new IOTA({
-            provider: nodes[0]
-        });
-
-        this.iota.api.attachToTangle = localAttachToTangle.default(this.iota, curl);
-
-        this.seed = this.createSeed();
-
-        curl.init();
-    }
-
     public createSeed(): string {
         let text = '';
         const alphabet = '9ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -34,6 +20,10 @@ export class IotaHelper {
     }
 
     public async uploadToTangle(data: {} | string, metaData: {} | string): Promise<{ bundle: number, seed: string }> {
+        if (!this.iota) {
+            await this.init();
+        }
+
         let address = await this.generateAddress();
         let tx = this.createTransactions(data, metaData, address);
         let to = await this.sendTransactions(tx);
@@ -45,12 +35,30 @@ export class IotaHelper {
     }
 
     public async fetchFromTangle<D, M>(bundle: string, seed: string): Promise<{ data: D, metaData: M }> {
+        if (!this.iota) {
+            await this.init();
+        }
+
         let transactions = await this.getTransactions(bundle);
         transactions = transactions.sort((a, b) => a.currentIndex - b.currentIndex);
         let trytes = transactions.map(tx => tx.signatureMessageFragment);
 
         let data = this.trytesToBase64(trytes);
         return decrypt(data, seed) as { data: D, metaData: M };
+    }
+
+    private async init(): Promise<void> {
+        let nodes = await this.getNodes();
+
+        this.iota = new IOTA({
+            provider: nodes[0]
+        });
+
+        this.iota.api.attachToTangle = localAttachToTangle.default(this.iota, curl);
+
+        this.seed = this.createSeed();
+
+        curl.init();
     }
 
     private async getNodes(): Promise<string[]> {

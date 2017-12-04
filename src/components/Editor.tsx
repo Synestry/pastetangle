@@ -95,8 +95,6 @@ export default class Editor extends React.Component<Props, State> {
 
         console.log('Fetching code...');
 
-        await iotaHelper.init();
-
         let { data, metaData } = await iotaHelper.fetchFromTangle<string, State>(this.state.bundle, this.state.seed);
 
         this.setState({
