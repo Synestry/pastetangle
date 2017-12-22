@@ -4,6 +4,7 @@ import localAttachToTangle = require('./localAttatchToTangle');
 import { encrypt, decrypt } from './crypt';
 
 const MAX_TRYTES = 2187;
+const proxy = 'https://cors-anywhere.herokuapp.com/';
 
 export class IotaHelper {
     private iota: IotaClass;
@@ -63,14 +64,14 @@ export class IotaHelper {
 
     private async getNodes(): Promise<string[]> {
         try {
-            let res = await window.fetch('https://cors-anywhere.herokuapp.com/http://iota.dance/data/node-stats');
+            let res = await window.fetch(`${proxy}/http://iota.dance/data/node-stats`);
             let data = await res.json();
 
             // Sort by ping
-            let results = data[data.length - 1].sort((a, b) => a.d - b.d);
+            let results = data.sort((a, b) => a.load - b.load);
+
             return results.map(r => {
-                let protocol = r.p === '443' ? 'https' : 'https://cors-anywhere.herokuapp.com/http';
-                return `${protocol}://${r.id}:${r.p}`;
+                return `${r.port === '443' ? proxy : ''}${r.node}:${r.port}`;
             });
         } catch (ex) {
             console.log(ex);
