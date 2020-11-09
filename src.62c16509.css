@@ -1,0 +1,41 @@
+.App-logo {
+  animation: App-logo-spin infinite 20s linear;
+  height: 80px;
+}
+
+@keyframes App-logo-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.loading-container {
+    width: 1000px;
+    height: 500px;
+}
+
+.loading-aligner {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    justify-content: center;
+    width: 60%;
+    height: 60%;
+}
+
+.loading-container li {
+    display: flex;
+    justify-content: center
+}
+
+.status-text {
+    color: #00d1b2 !important;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
+}
+
+
+/*# sourceMappingURL=/src.62c16509.css.map */
