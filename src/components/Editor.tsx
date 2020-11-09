@@ -1,11 +1,23 @@
-import * as React from 'react';
+import {h, Component} from "preact";
 import './Editor.css';
 import AceEditor from 'react-ace';
-import { RingLoader } from 'halogen';
-import 'brace/mode/jsx';
-import Clipboard = require('clipboard');
+import Clipboard from 'clipboard';
+import qs from "querystate";
+import {publish, fetch, generateSecret} from '../helpers/IotaHelper';
 
-const queryState = require('querystate')();
+// Setup ace
+import ace from "ace-builds/src-noconflict/ace";
+import 'ace-builds/src-min-noconflict/theme-tomorrow'
+import 'ace-builds/src-min-noconflict/mode-javascript'
+import 'ace-builds/src-noconflict/ext-language_tools';
+import 'ace-builds/src-noconflict/ext-searchbox';
+
+const CDN = 'https://cdn.jsdelivr.net/npm/ace-builds@1.4.12/src-min-noconflict';
+ace.config.set('basePath', CDN);
+ace.config.set('modePath', CDN);
+ace.config.set('themePath', CDN);
+ace.config.set('workerPath', CDN);
+const queryState = qs();
 
 const languages = [
     'javascript',
@@ -41,26 +53,13 @@ const themes = [
 
 const defaultCode = `console.log("hello iota");`;
 
-languages.forEach((lang) => {
-    require(`brace/mode/${lang}`);
-    require(`brace/snippets/${lang}`);
-});
-
-themes.forEach((theme) => {
-    require(`brace/theme/${theme}`);
-});
-
-import 'brace/ext/language_tools';
-import 'brace/ext/searchbox';
-
-import iotaHelper from '../helpers/IotaHelper';
-
 interface Props {
 }
 interface State {
     loading: boolean;
-    bundle: string;
-    seed: string;
+    root: string;
+    address: string;
+    secret: string;
     status: string;
     value: string;
     theme: string;
@@ -69,14 +68,15 @@ interface State {
     tabSize: number;
 }
 
-export default class Editor extends React.Component<Props, State> {
+export default class Editor extends Component<Props, State> {
     constructor(props: Props) {
         super(props);
 
         this.state = {
             loading: Boolean(queryState.get('bundle')),
-            bundle: queryState.get('bundle'),
-            seed: queryState.get('seed'),
+            root: queryState.get('root'),
+            address: "",
+            secret: queryState.get('secret'),
             status: 'Fetching code...',
             value: defaultCode,
             theme: 'tomorrow',
@@ -89,13 +89,24 @@ export default class Editor extends React.Component<Props, State> {
     }
 
     async getCode() {
-        if (!this.state.bundle || !this.state.seed) {
+        if (!this.state.root || !this.state.secret) {
             return;
         }
 
         console.log('Fetching code...');
+        this.setState({
+            loading: true
+        })
 
-        let { data, metaData } = await iotaHelper.fetchFromTangle<string, State>(this.state.bundle, this.state.seed);
+        let payload = await fetch(this.state.root, this.state.secret);
+        if (!payload) {
+            this.setState({
+                loading: false
+            });
+            return;
+        }
+
+        const {data, metaData} = payload[0];
 
         this.setState({
             value: data as string,
@@ -103,6 +114,36 @@ export default class Editor extends React.Component<Props, State> {
             mode: metaData.mode,
             fontSize: metaData.fontSize,
             tabSize: metaData.tabSize,
+            loading: false
+        });
+    }
+
+    async onSave() {
+        this.setState({
+            loading: true,
+            status: 'Saving...'
+        });
+
+        console.log('Saving...');
+
+        const secret = generateSecret();
+
+        const {root, address} = await publish({
+            data: this.state.value,
+            metaData: {
+                theme: this.state.theme,
+                mode: this.state.mode,
+                fontSize: this.state.fontSize,
+                tabSize: this.state.tabSize
+            }
+        }, secret);
+
+        queryState.set('root', root);
+        queryState.set('secret', secret);
+        this.setState({
+            root: root,
+            address: address,
+            secret: secret,
             loading: false
         });
     }
@@ -117,7 +158,24 @@ export default class Editor extends React.Component<Props, State> {
                                 <h3 className="status-text">{this.state.status}</h3>
                             </li>
                             <li>
-                                <RingLoader size="100px" color="#00d1b2" />
+                                <svg style="margin:auto;background:transparent;display:block;" width="200px" height="200px" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid">
+                                    <circle cx="84" cy="50" r="10" fill="#ec324c">
+                                        <animate attributeName="r" repeatCount="indefinite" dur="0.7575757575757576s" calcMode="spline" keyTimes="0;1" values="10;0" keySplines="0 0.5 0.5 1" begin="0s"></animate>
+                                        <animate attributeName="fill" repeatCount="indefinite" dur="3.0303030303030303s" calcMode="discrete" keyTimes="0;0.25;0.5;0.75;1" values="#ec324c;#32c2ec;#32ec9f;#7e32ec;#ec324c" begin="0s"></animate>
+                                    </circle><circle cx="16" cy="50" r="10" fill="#ec324c">
+                                    <animate attributeName="r" repeatCount="indefinite" dur="3.0303030303030303s" calcMode="spline" keyTimes="0;0.25;0.5;0.75;1" values="0;0;10;10;10" keySplines="0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1" begin="0s"></animate>
+                                    <animate attributeName="cx" repeatCount="indefinite" dur="3.0303030303030303s" calcMode="spline" keyTimes="0;0.25;0.5;0.75;1" values="16;16;16;50;84" keySplines="0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1" begin="0s"></animate>
+                                    </circle><circle cx="50" cy="50" r="10" fill="#7e32ec">
+                                    <animate attributeName="r" repeatCount="indefinite" dur="3.0303030303030303s" calcMode="spline" keyTimes="0;0.25;0.5;0.75;1" values="0;0;10;10;10" keySplines="0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1" begin="-0.7575757575757576s"></animate>
+                                    <animate attributeName="cx" repeatCount="indefinite" dur="3.0303030303030303s" calcMode="spline" keyTimes="0;0.25;0.5;0.75;1" values="16;16;16;50;84" keySplines="0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1" begin="-0.7575757575757576s"></animate>
+                                    </circle><circle cx="84" cy="50" r="10" fill="#32ec9f">
+                                    <animate attributeName="r" repeatCount="indefinite" dur="3.0303030303030303s" calcMode="spline" keyTimes="0;0.25;0.5;0.75;1" values="0;0;10;10;10" keySplines="0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1" begin="-1.5151515151515151s"></animate>
+                                    <animate attributeName="cx" repeatCount="indefinite" dur="3.0303030303030303s" calcMode="spline" keyTimes="0;0.25;0.5;0.75;1" values="16;16;16;50;84" keySplines="0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1" begin="-1.5151515151515151s"></animate>
+                                    </circle><circle cx="16" cy="50" r="10" fill="#32c2ec">
+                                    <animate attributeName="r" repeatCount="indefinite" dur="3.0303030303030303s" calcMode="spline" keyTimes="0;0.25;0.5;0.75;1" values="0;0;10;10;10" keySplines="0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1" begin="-2.2727272727272725s"></animate>
+                                    <animate attributeName="cx" repeatCount="indefinite" dur="3.0303030303030303s" calcMode="spline" keyTimes="0;0.25;0.5;0.75;1" values="16;16;16;50;84" keySplines="0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1" begin="-2.2727272727272725s"></animate>
+                                    </circle>
+                                </svg>
                             </li>
                         </ul>
                     </div>
@@ -148,30 +206,6 @@ export default class Editor extends React.Component<Props, State> {
         );
     }
 
-    async onSave() {
-        this.setState({
-            loading: true,
-            status: 'Saving...'
-        });
-
-        console.log('saving...');
-        let transaction = await iotaHelper.uploadToTangle(this.state.value, {
-            theme: this.state.theme,
-            mode: this.state.mode,
-            fontSize: this.state.fontSize,
-            tabSize: this.state.tabSize
-        });
-
-        console.log(transaction);
-        queryState.set('bundle', transaction.bundle);
-        queryState.set('seed', transaction.seed);
-        this.setState({
-            bundle: transaction.bundle.toString(),
-            seed: transaction.seed,
-            loading: false
-        });
-    }
-
     onCopy() {
         let a = new Clipboard('.copy-url', {
             text: () => window.location.href
@@ -185,31 +219,31 @@ export default class Editor extends React.Component<Props, State> {
         });
     }
 
-    setTheme(e: React.ChangeEvent<HTMLSelectElement>) {
+    setTheme(e: Event) {
         this.setState({
-            theme: e.target.value
+            theme: e.target["value"]
         });
     }
 
-    setMode(e: React.ChangeEvent<HTMLSelectElement>) {
+    setMode(e: Event) {
         this.setState({
-            mode: e.target.value
+            mode: e.target["value"]
         });
     }
 
-    setFontSize(e: React.ChangeEvent<HTMLSelectElement>) {
+    setFontSize(e: Event) {
         this.setState({
-            fontSize: parseInt(e.target.value, 10)
+            fontSize: parseInt(e.target["value"], 10)
         });
     }
 
-    setTabSize(e: React.ChangeEvent<HTMLSelectElement>) {
+    setTabSize(e: Event) {
         this.setState({
-            tabSize: parseInt(e.target.value, 10)
+            tabSize: parseInt(e.target["value"], 10)
         });
     }
 
-    render(): JSX.Element {
+    render() {
         return (
             <div className="container">
                 <div className="content">
@@ -300,13 +334,13 @@ export default class Editor extends React.Component<Props, State> {
                                         <span>GitHub</span>
                                     </a>
                                 </p>
-                                {this.state.bundle ? (
+                                {this.state.root ? (
                                     <p className="control">
-                                        <a className="button"
+                                        {this.state.address != "" && (<a className="button"
                                             target="_blank"
-                                            href={`https://thetangle.org/bundle/${this.state.bundle}`}>
+                                            href={`https://thetangle.org/address/${this.state.address}`}>
                                             <span>See Transaction</span>
-                                        </a>
+                                        </a>)}
                                     </p>
                                 ) : null}
 

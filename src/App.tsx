@@ -1,10 +1,10 @@
-import * as React from 'react';
+import {h, Component} from "preact";
 import './App.css';
 import Editor from './components/Editor';
 
 const logo = require('./logo.svg');
 
-class App extends React.Component<{}, {}> {
+class App extends Component<{}, {}> {
     render() {
         return (
             <div className="App">
@@ -17,7 +17,7 @@ class App extends React.Component<{}, {}> {
                                 PasteTangle
                             </h1>
                             <h2 className="subtitle">
-                                An encrypted anonymous pastebin
+                                An encrypted, anonymous pastebin
                             </h2>
                         </div>
                     </div>
